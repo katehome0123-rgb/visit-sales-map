@@ -1,0 +1,63 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prepare web assets
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Sync web assets into Android project
+        run: npx cap sync android
+
+      - name: Add location permissions to AndroidManifest.xml
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = 'android/app/src/main/AndroidManifest.xml';
+            let xml = fs.readFileSync(path, 'utf8');
+            const perms = '    <uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />\n    <uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\" />\n';
+            if (!xml.includes('ACCESS_FINE_LOCATION')) {
+              xml = xml.replace('</manifest>', perms + '</manifest>');
+              fs.writeFileSync(path, xml);
+            }
+          "
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: visit-sales-map-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
