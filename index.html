@@ -4,56 +4,50 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>訪問営業マップ</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-rotate@0.2.8/dist/leaflet-rotate-src.js"></script>
 <style>
 :root{
   --bg:#f4f5f7; --panel:#ffffff; --panel-border:#e2e4e8; --text:#1c1e21; --text-sub:#6b7280;
-  --accent:#2563eb; --accent-text:#ffffff; --danger:#ef4444; --canvas-bg:#eef1f5; --grid:#d8dce3;
+  --accent:#2563eb; --accent-text:#ffffff; --danger:#ef4444;
   --toolbar-bg:#1f2430; --toolbar-text:#f4f5f7; --toolbar-sub:#9aa3b2; --shadow:0 2px 10px rgba(0,0,0,0.08);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#15171c; --panel:#1e2129; --panel-border:#2c303a; --text:#eef0f3; --text-sub:#9aa3b2;
-    --accent:#3b82f6; --accent-text:#ffffff; --danger:#f87171; --canvas-bg:#20242c; --grid:#2c3340;
+    --accent:#3b82f6; --accent-text:#ffffff; --danger:#f87171;
     --toolbar-bg:#0f1115; --toolbar-text:#eef0f3; --toolbar-sub:#8890a0; --shadow:0 2px 12px rgba(0,0,0,0.4);
   }
-}
-:root[data-theme="dark"]{
-  --bg:#15171c; --panel:#1e2129; --panel-border:#2c303a; --text:#eef0f3; --text-sub:#9aa3b2;
-  --accent:#3b82f6; --accent-text:#ffffff; --danger:#f87171; --canvas-bg:#20242c; --grid:#2c3340;
-  --toolbar-bg:#0f1115; --toolbar-text:#eef0f3; --toolbar-sub:#8890a0; --shadow:0 2px 12px rgba(0,0,0,0.4);
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Segoe UI",Meiryo,sans-serif; overflow:hidden;}
 #app{display:flex; flex-direction:column; height:100dvh; width:100vw;}
 
-/* ---------- Top bar ---------- */
-.topbar{background:var(--toolbar-bg); color:var(--toolbar-text); padding:5px 8px; display:flex; align-items:center; gap:6px; flex-wrap:nowrap; z-index:20;}
-.topbar select{background:#2a2f3a; color:var(--toolbar-text); border:1px solid #3a4051; border-radius:8px; padding:5px 7px; font-size:12px; max-width:38vw;}
-.iconbtn{background:#2a2f3a; color:var(--toolbar-text); border:1px solid #3a4051; border-radius:8px; padding:5px 9px; font-size:12px; cursor:pointer; white-space:nowrap; flex-shrink:0;}
+.topbar{background:var(--toolbar-bg); color:var(--toolbar-text); padding:6px 8px; display:flex; align-items:center; gap:6px; flex-wrap:nowrap; z-index:20;}
+.iconbtn{background:#2a2f3a; color:var(--toolbar-text); border:1px solid #3a4051; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; flex-shrink:0;}
 .iconbtn:active{background:#3a4051;}
 .iconbtn.active{background:var(--accent); border-color:var(--accent); color:var(--accent-text);}
 .topbar .spacer{flex:1;}
-.tabRow{display:flex; gap:5px; overflow-x:auto; flex:1; min-width:0; scrollbar-width:none;}
+.tabRow{display:flex; gap:6px; overflow-x:auto; flex:1; min-width:0; scrollbar-width:none;}
 .tabRow::-webkit-scrollbar{display:none;}
-.tabChip{background:#2a2f3a; color:var(--toolbar-text); border:1px solid #3a4051; border-radius:16px; padding:5px 11px; font-size:12px; white-space:nowrap; cursor:pointer; flex-shrink:0;}
-.tabChip.active{background:var(--accent); border-color:var(--accent); font-weight:600;}
-#statusOverlay{position:absolute; bottom:70px; right:10px; max-width:60vw; background:var(--panel); color:var(--text-sub); border:1px solid var(--panel-border); border-radius:8px; padding:5px 8px; font-size:10px; line-height:1.5; box-shadow:var(--shadow); z-index:14; display:none; text-align:right;}
-#bigStopBtn{position:absolute; left:50%; bottom:20px; transform:translateX(-50%); background:var(--danger); color:#fff; border:none; border-radius:30px; padding:14px 26px; font-size:15px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.3); z-index:16; cursor:pointer;}
-#bigStopBtn:active{opacity:0.85;}
-#calibBanner{position:absolute; top:10px; left:10px; right:10px; background:var(--accent); color:#fff; border-radius:10px; padding:10px 12px; font-size:13px; box-shadow:var(--shadow); z-index:25; display:none;}
-#calibBanner .cbtn{background:rgba(255,255,255,0.2); border:none; color:#fff; border-radius:7px; padding:6px 10px; font-size:12px; margin-top:6px;}
+#searchInput{flex:1; min-width:0; background:#2a2f3a; color:var(--toolbar-text); border:1px solid #3a4051; border-radius:8px; padding:7px 10px; font-size:13px;}
+#searchInput::placeholder{color:var(--toolbar-sub);}
 
-/* ---------- Map area ---------- */
-#mapWrap{position:relative; flex:1; overflow:hidden; background:var(--canvas-bg);}
-#mapCanvas{position:absolute; top:0; left:0; touch-action:none;}
-#hint{position:absolute; top:10px; left:10px; right:10px; background:var(--panel); color:var(--text); border:1px solid var(--panel-border); border-radius:10px; padding:8px 10px; font-size:12px; box-shadow:var(--shadow); display:flex; justify-content:space-between; gap:8px; align-items:center;}
+#mapWrap{position:relative; flex:1;}
+#map{position:absolute; inset:0;}
+.leaflet-container{background:#eef1f5; font-family:inherit;}
+.pin-tooltip{background:var(--panel)!important; color:var(--text)!important; border:1px solid var(--panel-border)!important; border-radius:6px!important; font-size:11px!important; padding:2px 6px!important; box-shadow:var(--shadow)!important;}
+.pin-tooltip::before{display:none!important;}
+
+#hint{position:absolute; top:10px; left:10px; right:10px; background:var(--panel); color:var(--text); border:1px solid var(--panel-border); border-radius:10px; padding:8px 10px; font-size:12px; box-shadow:var(--shadow); display:flex; justify-content:space-between; gap:8px; align-items:center; z-index:900;}
 #hint button{background:none; border:none; color:var(--text-sub); font-size:16px; cursor:pointer; line-height:1;}
 
-#zoomCtl{position:absolute; right:10px; bottom:16px; display:flex; flex-direction:column; gap:6px; z-index:15;}
-#zoomCtl button{width:40px; height:40px; border-radius:50%; border:1px solid var(--panel-border); background:var(--panel); color:var(--text); font-size:20px; box-shadow:var(--shadow); cursor:pointer;}
+#statusOverlay{position:absolute; bottom:16px; right:10px; max-width:60vw; background:var(--panel); color:var(--text-sub); border:1px solid var(--panel-border); border-radius:8px; padding:5px 8px; font-size:10px; line-height:1.5; box-shadow:var(--shadow); z-index:900; display:none; text-align:right;}
+#btnLocate{position:absolute; right:10px; bottom:70px; width:40px; height:40px; border-radius:50%; border:1px solid var(--panel-border); background:var(--panel); color:var(--text); font-size:18px; box-shadow:var(--shadow); cursor:pointer; z-index:900;}
 
 /* ---------- List drawer ---------- */
-#listDrawer{position:absolute; top:0; right:0; bottom:0; width:78vw; max-width:340px; background:var(--panel); box-shadow:-4px 0 14px rgba(0,0,0,0.15); transform:translateX(100%); transition:transform .2s ease; z-index:30; display:flex; flex-direction:column;}
+#listDrawer{position:absolute; top:0; right:0; bottom:0; width:78vw; max-width:340px; background:var(--panel); box-shadow:-4px 0 14px rgba(0,0,0,0.15); transform:translateX(100%); transition:transform .2s ease; z-index:1000; display:flex; flex-direction:column;}
 #listDrawer.open{transform:translateX(0);}
 #listDrawer header{padding:12px; border-bottom:1px solid var(--panel-border); display:flex; align-items:center; justify-content:space-between;}
 #listDrawer header b{font-size:15px;}
@@ -68,7 +62,7 @@ html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--te
 .pinItem .dt{font-size:10px; color:var(--text-sub);}
 
 /* ---------- Modal ---------- */
-.overlay{position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:flex-end; justify-content:center; z-index:50;}
+.overlay{position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:flex-end; justify-content:center; z-index:2000;}
 .overlay.hidden{display:none;}
 .sheet{background:var(--panel); color:var(--text); width:100%; max-width:480px; border-radius:16px 16px 0 0; padding:16px; max-height:88vh; overflow-y:auto;}
 @media (min-width:520px){ .overlay{align-items:center;} .sheet{border-radius:16px;} }
@@ -85,42 +79,31 @@ html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--te
 .btnPrimary{background:var(--accent); color:var(--accent-text);}
 .btnGhost{background:var(--bg); color:var(--text); border:1px solid var(--panel-border) !important;}
 .btnDanger{background:none; color:var(--danger); border:1px solid var(--danger) !important;}
-#areaNamePrompt input{width:100%;}
 .smallnote{font-size:11px; color:var(--text-sub); margin-top:8px;}
 </style>
 </head>
 <body>
 <div id="app">
   <div class="topbar">
-    <div id="districtTabs" class="tabRow"></div>
-    <button class="iconbtn" id="btnAddDistrict">＋地域</button>
-  </div>
-  <div class="topbar">
-    <div id="chomeTabs" class="tabRow"></div>
-    <button class="iconbtn" id="btnAddChome">＋丁目</button>
+    <input type="text" id="searchInput" placeholder="例：江戸川区大杉5丁目">
+    <button class="iconbtn" id="btnSearch">検索</button>
   </div>
   <div class="topbar">
     <div class="tabRow" style="flex:1;">
-      <button class="iconbtn" id="btnAreaMenu">⋯設定</button>
       <button class="iconbtn" id="btnList">一覧</button>
       <button class="iconbtn" id="btnFilterKey">🏷</button>
-      <button class="iconbtn" id="btnCalib">📐位置合わせ</button>
-      <button class="iconbtn" id="btnGps">🛰GPS開始</button>
-      <button class="iconbtn" id="btnLocate">🎯現在地</button>
+      <button class="iconbtn active" id="btnHeading">🧭進行方向を上に</button>
+      <button class="iconbtn" id="btnRouteToggle">▶ルート開始</button>
+      <button class="iconbtn" id="btnRouteDelete">🗑ルート削除</button>
+      <button class="iconbtn" id="btnBackup">📦</button>
     </div>
   </div>
 
   <div id="mapWrap">
-    <canvas id="mapCanvas"></canvas>
+    <div id="map"></div>
     <div id="hint"><span id="hintText"></span><button id="hintClose">✕</button></div>
-    <div id="calibBanner"></div>
     <div id="statusOverlay"></div>
-    <button id="bigStopBtn" style="display:none;">⏹ GPS追跡を停止</button>
-    <div id="zoomCtl">
-      <button id="zoomIn">＋</button>
-      <button id="zoomOut">－</button>
-      <button id="zoomFit" style="font-size:14px;">⤢</button>
-    </div>
+    <button id="btnLocate" title="現在地に戻る">🎯</button>
   </div>
 </div>
 
@@ -148,32 +131,25 @@ html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--te
   </div>
 </div>
 
-<!-- Chome (leaf area) settings modal -->
-<div class="overlay hidden" id="areaModal">
+<!-- Backup modal -->
+<div class="overlay hidden" id="settingsModal">
   <div class="sheet">
-    <h3 id="areaModalTitle">丁目の設定</h3>
-    <label>丁目名（表示名）</label>
-    <input type="text" id="areaNameInput">
-    <label>背景地図画像（Googleマップのスクリーンショットなど）</label>
-    <button class="iconbtn" id="areaImageBtn" style="width:100%;padding:10px;">🖼 画像を選択してアップロード</button>
-    <div class="smallnote" id="areaImageFileName">未選択</div>
-    <input type="file" id="areaImageInput" accept="image/*" style="display:none;">
-    <div class="smallnote">画像を設定すると、実際の住宅地図のように使えます。未設定の場合は方眼のみ表示されます。</div>
-    <label>GPS・ルート</label>
-    <button class="iconbtn" id="clearCalib" style="width:100%;padding:9px;margin-bottom:6px;">📐 位置合わせを解除（毎回やり直せます）</button>
-    <button class="iconbtn" id="clearRoutes" style="width:100%;padding:9px;">🗑 記録ルートを全消去</button>
+    <h3>データのバックアップ</h3>
+    <div class="smallnote" style="margin-top:0;">このアプリのデータはこの端末の中だけに保存されます。他の端末に移したい場合は、ファイルに書き出して読み込んでください。</div>
     <div class="sheetBtns">
-      <button class="btnDanger" id="areaDelete">この丁目を削除</button>
-      <button class="btnGhost" id="areaCancel">閉じる</button>
-      <button class="btnPrimary" id="areaSave">保存</button>
+      <button class="btnPrimary" id="doExport">今のデータをファイルに保存する</button>
     </div>
+    <label>ファイルから読み込む（今のデータと置き換わります）</label>
+    <button class="iconbtn" id="importFileBtn" style="width:100%;padding:9px;">ファイルを選択</button>
+    <div class="smallnote" id="importFileName">未選択</div>
+    <input type="file" id="importFile" accept="application/json" style="display:none;">
     <div class="sheetBtns">
-      <button class="btnDanger" id="districtDelete">この地域を丸ごと削除</button>
+      <button class="btnGhost" id="settingsClose">閉じる</button>
     </div>
   </div>
 </div>
 
-<!-- Generic alert/confirm/prompt modal (native dialogs are unreliable inside the embedded preview) -->
+<!-- Generic alert/confirm/prompt modal -->
 <div class="overlay hidden" id="genericModal">
   <div class="sheet">
     <h3 id="genericModalTitle"></h3>
@@ -186,29 +162,11 @@ html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--te
   </div>
 </div>
 
-<!-- Import/Export -->
-<div class="overlay hidden" id="ioModal">
-  <div class="sheet">
-    <h3>データのバックアップ（上級者向け）</h3>
-    <div class="smallnote" style="margin-top:0;">通常は使う必要はありません。PCとスマホのデータは自動で同期されます。万一のため、手元にファイルとして保存しておきたい場合だけお使いください。</div>
-    <div class="sheetBtns">
-      <button class="btnPrimary" id="doExport">今のデータをファイルに保存する</button>
-    </div>
-    <label>ファイルから読み込む（今のデータと置き換わります）</label>
-    <button class="iconbtn" id="importFileBtn" style="width:100%;padding:9px;">ファイルを選択</button>
-    <div class="smallnote" id="importFileName">未選択</div>
-    <input type="file" id="importFile" accept="application/json" style="display:none;">
-    <div class="sheetBtns">
-      <button class="btnGhost" id="ioClose">閉じる</button>
-    </div>
-  </div>
-</div>
-
 <script>
 (function(){
 "use strict";
 
-const STORAGE_KEY = "visitSalesMapData_v1";
+const STORAGE_KEY = "visitSalesMapData_v2";
 const STATUS_GROUPS = [
   {gkey:'talking',  label:'商談中',  color:'#ffa726', codes:['IF','IM','IGF','IGM','IC']},
   {gkey:'refused',  label:'断り',    color:'#ef5350', codes:['FK','MK','GFK','GMK','IFK','IMK','IGFK','IGMK']},
@@ -217,26 +175,20 @@ const STATUS_GROUPS = [
   {gkey:'revisit',  label:'再訪問',  color:'#ab47bc', codes:['再訪']},
   {gkey:'ap',       label:'AP',      color:'#26a69a', codes:['AP']},
 ];
-const STATUSES = STATUS_GROUPS.flatMap(g=>g.codes.map(code=>({key:code, label:code, color:g.color, group:g.gkey, groupLabel:g.label})));
-const KEY_FILTER_CODES = new Set(['係','再訪','不在']);
+const STATUSES = STATUS_GROUPS.flatMap(g=>g.codes.map(code=>({key:code, label:code, color:g.color, group:g.gkey})));
 const statusMap = Object.fromEntries(STATUSES.map(s=>[s.key,s]));
+const KEY_FILTER_CODES = new Set(['係','再訪','不在']);
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
-function todayStr(){ const d=new Date(); return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,'0')+"/"+String(d.getDate()).padStart(2,'0'); }
-function roundRect(ctx,x,y,w,h,rad){
-  ctx.beginPath();
-  ctx.moveTo(x+rad,y);
-  ctx.arcTo(x+w,y,x+w,y+h,rad);
-  ctx.arcTo(x+w,y+h,x,y+h,rad);
-  ctx.arcTo(x,y+h,x,y,rad);
-  ctx.arcTo(x,y,x+w,y,rad);
-  ctx.closePath();
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, toRad=d=>d*Math.PI/180;
+  const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
 }
+function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-/* ---------------- Custom alert/confirm/prompt ----------------
-   Native window.alert/confirm/prompt are unreliable inside the
-   embedded preview (sandboxed iframes can silently swallow them),
-   so every dialog in this app goes through this in-page modal instead. */
+/* ---------------- Custom alert/confirm/prompt ---------------- */
 function uiModal({title, message, withInput, defaultValue, placeholder, showCancel=true, okLabel='OK', cancelLabel='キャンセル', danger=false}){
   return new Promise(resolve=>{
     const modal = document.getElementById('genericModal');
@@ -255,707 +207,236 @@ function uiModal({title, message, withInput, defaultValue, placeholder, showCanc
     function cleanup(){ modal.classList.add('hidden'); okBtn.onclick=null; cancelBtn.onclick=null; }
     okBtn.onclick = ()=>{ const val = withInput ? inputEl.value : true; cleanup(); resolve(val); };
     cancelBtn.onclick = ()=>{ cleanup(); resolve(null); };
-    if(withInput){
-      setTimeout(()=>{ inputEl.focus(); inputEl.select(); }, 50);
-      inputEl.onkeydown = (e)=>{ if(e.key==='Enter'){ okBtn.click(); } };
-    } else {
-      inputEl.onkeydown = null;
-    }
+    if(withInput){ setTimeout(()=>{ inputEl.focus(); inputEl.select(); }, 50); inputEl.onkeydown=(e)=>{ if(e.key==='Enter') okBtn.click(); }; }
   });
 }
 function uiAlert(message, title){ uiModal({title:title||'お知らせ', message, showCancel:false}); }
 function uiConfirm(message, danger){ return uiModal({title:'確認', message, showCancel:true, danger}).then(v=>v===true); }
-function uiPrompt(title, placeholder, defaultValue){ return uiModal({title, withInput:true, placeholder, defaultValue}); }
 
-const SEED_DISTRICTS = ["南篠崎町","篠崎町","上篠崎","下篠崎町","北篠崎","東篠崎","西篠崎","鹿骨","谷河内","一之江","一之江町","春江町","瑞江","西瑞江","東瑞江","新堀","江戸川","北葛西","西葛西","中葛西","東葛西","南葛西","臨海町","清新町","宇喜田町","堀江町","船堀","小松川","西小松川町","平井","小岩","東小岩","西小岩","南小岩","北小岩","松本","東松本","興宮町","本一色","上一色","中央","松島","松江","大杉"];
-
-/* ---------------- Data ---------------- */
-let data = loadData();
-if(!Array.isArray(data.districts) || data.districts.length===0){ data.districts = SEED_DISTRICTS.slice(); }
-Object.values(data.areas).forEach(a=>{
-  if(!a.routes) a.routes=[];
-  if(!a.pins) a.pins=[];
-  if(a.calib===undefined) a.calib=null;
-  delete a.streets;
-  if(!a.district){
-    a.district = "その他";
-    if(!data.districts.includes("その他")) data.districts.push("その他");
-  }
-  if(!a.chome){ a.chome = a.name || "1件目"; }
-});
-if(!data.currentDistrict || !data.districts.includes(data.currentDistrict)){
-  const firstArea = data.areas[data.currentAreaId];
-  data.currentDistrict = firstArea ? firstArea.district : (data.districts[0]||null);
-}
-function defaultData(){
-  const areaId = uid();
-  return {
-    currentDistrict: "南篠崎町",
-    currentAreaId: areaId,
-    hintDismissed:false,
-    districts: SEED_DISTRICTS.slice(),
-    areas:{
-      [areaId]:{ district:"南篠崎町", chome:"1丁目", image:null, imgW:0, imgH:0, pins:[], routes:[], calib:null }
-    }
-  };
-}
+/* ---------------- Data (flat: no more districts/chome/images) ---------------- */
+function defaultData(){ return { pins:[], routes:[], hintDismissed:false }; }
 function loadData(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return defaultData();
     const parsed = JSON.parse(raw);
-    if(!parsed || !parsed.areas || Object.keys(parsed.areas).length===0) return defaultData();
+    if(!parsed || !Array.isArray(parsed.pins)) return defaultData();
+    if(!Array.isArray(parsed.routes)) parsed.routes = [];
     return parsed;
-  }catch(e){ console.error("load failed", e); return defaultData(); }
+  }catch(e){ console.error('load failed', e); return defaultData(); }
 }
+let data = loadData();
 function saveData(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-  catch(e){ console.error("save failed", e); uiAlert("保存に失敗しました（容量オーバーの可能性があります）。画像サイズを見直してください。"); }
-  scheduleCloudPush();
+  catch(e){ console.error('save failed', e); uiAlert('保存に失敗しました（容量オーバーの可能性があります）。'); }
 }
-function currentArea(){ return data.currentAreaId ? (data.areas[data.currentAreaId]||null) : null; }
 
-/* ---------------- Cloud sync (keeps PC and phone in sync) ----------------
-   Uses this artifact's own account-scoped storage: pins/routes/settings go
-   in `db` under this viewer's private subtree, and map images go in
-   `assets`. Falls back silently to this-device-only (localStorage) when
-   those capabilities aren't available. */
-let cloud = {ready:false, db:null, user:null, assets:null, downloads:null, uid:null};
-let cloudPushTimer = null;
-let cloudPushInFlight = false;
-let cloudPushQueued = false;
+/* ---------------- Map ---------------- */
+const DEFAULT_CENTER = [35.7005, 139.8730]; // 江戸川区南篠崎町あたり
+const map = L.map('map', { zoomControl:true, attributionControl:true, rotate:true, rotateControl:false, touchRotate:false }).setView(DEFAULT_CENTER, 15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-let statusOverlayMsgs = {stats:'', gps:'', cloud:''};
+const pinsLayer = L.layerGroup().addTo(map);
+const routesLayer = L.layerGroup().addTo(map);
+let searchHighlight = null;
+
+let statusFilterMode = 'all'; // 'all' | 'keyOnly'
+const hiddenStatus = new Set();
+
+function statusColorOf(code){ return code && statusMap[code] ? statusMap[code].color : '#9e9e9e'; }
+function pinVisible(p){
+  if(hiddenStatus.has(p.status)) return false;
+  if(statusFilterMode==='keyOnly' && !KEY_FILTER_CODES.has(p.status)) return false;
+  return true;
+}
+function pinLabelText(p){
+  const parts=[];
+  if(p.status) parts.push(p.status);
+  const nm = (p.name && p.name.trim()) || (p.memo && p.memo.trim()) || '';
+  if(nm){
+    const t = nm.length>16 ? nm.slice(0,16)+'…' : nm;
+    parts.push(t);
+  }
+  return parts.join(' ');
+}
+function makeIcon(status){
+  const color = statusColorOf(status);
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.45);"></div>`,
+    iconSize:[14,14], iconAnchor:[7,7]
+  });
+}
+function renderPins(){
+  pinsLayer.clearLayers();
+  data.pins.forEach(p=>{
+    if(!pinVisible(p)) return;
+    const marker = L.marker([p.lat,p.lng], {icon:makeIcon(p.status)});
+    const lbl = pinLabelText(p);
+    if(lbl) marker.bindTooltip(lbl, {permanent:true, direction:'top', offset:[0,-8], className:'pin-tooltip'});
+    marker.on('click', ()=> openPinModal(p, false));
+    marker.addTo(pinsLayer);
+  });
+  updateStatsLine();
+}
+function renderRoutes(){
+  routesLayer.clearLayers();
+  data.routes.forEach(r=>{
+    if(!r.points || r.points.length<2) return;
+    L.polyline(r.points.map(pt=>[pt.lat,pt.lng]), {color:'#2563eb', weight:4, opacity:0.85, dashArray:'8,6'}).addTo(routesLayer);
+  });
+}
+
+map.on('click', (e)=>{
+  // Nothing is saved yet — just open the modal against this location.
+  // The pin only becomes real once a status is picked or Save is pressed with content.
+  const pendingPin = {id:null, lat:e.latlng.lat, lng:e.latlng.lng, status:null, name:'', memo:'', updatedAt:null};
+  openPinModal(pendingPin, true);
+});
+
+/* ---------------- Search (Nominatim, free) ---------------- */
+document.getElementById('btnSearch').addEventListener('click', doSearch);
+document.getElementById('searchInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doSearch(); });
+async function doSearch(){
+  const q = document.getElementById('searchInput').value.trim();
+  if(!q) return;
+  try{
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=jp&accept-language=ja&q=' + encodeURIComponent(q);
+    const res = await fetch(url);
+    const results = await res.json();
+    if(!results.length){ uiAlert('見つかりませんでした。「江戸川区」など地域名を付けて試してください。'); return; }
+    const r = results[0];
+    const bb = r.boundingbox.map(Number); // [south, north, west, east]
+    const bounds = L.latLngBounds([bb[0],bb[2]], [bb[1],bb[3]]);
+    if(searchHighlight) map.removeLayer(searchHighlight);
+    searchHighlight = L.rectangle(bounds, {color:'#ef4444', weight:3, fill:false});
+    searchHighlight.addTo(map);
+    map.fitBounds(bounds, {padding:[20,20]});
+  }catch(e){
+    uiAlert('検索に失敗しました。通信環境をご確認ください。');
+  }
+}
+
+/* ---------------- Current location (always on) + route recording (start/end) ---------------- */
+const MAX_RECORD_MS = 3*60*60*1000; // safety auto-end after 3 hours
+let userMarker=null, accuracyCircle=null;
+let watchId=null, recording=false, liveRoutePoints=[], lastFix=null, recordingStartedAt=null, hasCenteredOnce=false;
+let liveLine=null;
+let headingUp = true;
+let statusOverlayMsgs = {stats:'', gps:''};
+
 function renderStatusOverlay(){
   const el = document.getElementById('statusOverlay');
-  const parts = [statusOverlayMsgs.stats, statusOverlayMsgs.gps, statusOverlayMsgs.cloud].filter(Boolean);
+  const parts=[statusOverlayMsgs.stats, statusOverlayMsgs.gps].filter(Boolean);
   if(parts.length===0){ el.style.display='none'; return; }
   el.innerHTML = parts.map(escapeHtml).join('<br>');
   el.style.display='block';
 }
-function setCloudStatus(msg){ statusOverlayMsgs.cloud = msg||''; renderStatusOverlay(); }
-
-async function initCloud(){
-  try{
-    if(!window.claude || typeof window.claude.use !== 'function') return;
-    const [dbCap, userCap, assetsCap, downloadsCap] = await Promise.all([
-      window.claude.use('db'), window.claude.use('user'), window.claude.use('assets'), window.claude.use('downloads')
-    ]);
-    if(!dbCap || !userCap){ setCloudStatus(''); return; }
-    const uid = await userCap.id();
-    if(!uid){ setCloudStatus(''); return; }
-    cloud = {ready:true, db:dbCap, user:userCap, assets:assetsCap, downloads:downloadsCap, uid};
-    setCloudStatus('☁️ 同期を確認中…');
-    await pullFromCloudIfNewer();
-    setCloudStatus('☁️ PC・スマホで自動同期しています');
-  }catch(e){ console.error('cloud init failed', e); setCloudStatus(''); }
-}
-function indexDocRef(){ return cloud.db.doc('data/users/'+cloud.uid+'/appdata'); }
-function areasColRef(){ return indexDocRef().collection('areas'); }
-
-async function pullFromCloudIfNewer(){
-  const snap = await indexDocRef().get();
-  if(!snap.exists){ await pushToCloud(); return; }
-  const cloudIdx = snap.data();
-  const localUpdated = data.updatedAt || 0;
-  const cloudUpdated = cloudIdx.updatedAt || 0;
-  if(cloudUpdated > localUpdated){
-    const areasSnap = await areasColRef().get();
-    const newAreas = {};
-    areasSnap.docs.forEach(d=>{
-      const a = d.data();
-      newAreas[d.id] = {
-        district:a.district, chome:a.chome,
-        image: a.imageAssetId ? ('/_blob/'+a.imageAssetId) : null,
-        imageAssetId: a.imageAssetId||null,
-        imgW:a.imgW||0, imgH:a.imgH||0,
-        pins:a.pins||[], routes:a.routes||[], calib:a.calib||null
-      };
-    });
-    const newDistricts = (cloudIdx.districts && cloudIdx.districts.length) ? cloudIdx.districts : SEED_DISTRICTS.slice();
-    data = {
-      districts: newDistricts,
-      currentDistrict: cloudIdx.currentDistrict || newDistricts[0],
-      currentAreaId: cloudIdx.currentAreaId || null,
-      hintDismissed: !!cloudIdx.hintDismissed,
-      updatedAt: cloudUpdated,
-      areas: newAreas
-    };
-    if(!data.areas[data.currentAreaId]){
-      const list = Object.keys(data.areas);
-      data.currentAreaId = list.length ? list[0] : null;
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    renderDistrictTabs(); renderChomeTabs();
-    switchToCurrentArea();
-  } else if(localUpdated > cloudUpdated){
-    await pushToCloud();
-  }
-}
-
-function scheduleCloudPush(){
-  if(!cloud.ready) return;
-  if(cloudPushTimer) clearTimeout(cloudPushTimer);
-  cloudPushTimer = setTimeout(()=>{ cloudPushTimer=null; pushToCloud(); }, 2000);
-}
-
-async function pushToCloud(){
-  if(!cloud.ready) return;
-  if(cloudPushInFlight){ cloudPushQueued = true; return; }
-  cloudPushInFlight = true;
-  setCloudStatus('☁️ 同期中…');
-  try{
-    data.updatedAt = Date.now();
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){}
-    await indexDocRef().set({
-      districts:data.districts, currentDistrict:data.currentDistrict, currentAreaId:data.currentAreaId,
-      hintDismissed:!!data.hintDismissed, updatedAt:data.updatedAt
-    });
-    const col = areasColRef();
-    for(const [id,a] of Object.entries(data.areas)){
-      await col.doc(id).set({
-        district:a.district, chome:a.chome, imgW:a.imgW||0, imgH:a.imgH||0,
-        imageAssetId:a.imageAssetId||null,
-        pins:a.pins||[], routes:a.routes||[], calib:a.calib||null
-      });
-    }
-    setCloudStatus('☁️ 同期済み（'+new Date(data.updatedAt).toLocaleTimeString('ja-JP')+'）');
-  }catch(e){
-    console.error('cloud push failed', e);
-    setCloudStatus('☁️ 同期に失敗しました（電波状況をご確認ください）');
-  } finally {
-    cloudPushInFlight = false;
-    if(cloudPushQueued){ cloudPushQueued=false; pushToCloud(); }
-  }
-}
-document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState==='hidden' && cloudPushTimer){
-    clearTimeout(cloudPushTimer); cloudPushTimer=null; pushToCloud();
-  }
-});
-
-/* ---------------- GPS <-> map coordinate transform ---------------- */
-// Local equirectangular projection relative to a reference lat/lon.
-// y is flipped (north = negative) so it matches a north-up screen (down = larger y).
-function metersXY(lat, lon, lat0, lon0){
-  const R = 6371000;
-  const x = (lon-lon0)*Math.PI/180*R*Math.cos(lat0*Math.PI/180);
-  const y = -(lat-lat0)*Math.PI/180*R;
-  return {x,y};
-}
-function haversine(lat1,lon1,lat2,lon2){
-  const R=6371000, toRad=d=>d*Math.PI/180;
-  const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
-  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(a));
-}
-// Convert a GPS position to this area's world (canvas) coordinates using its 2-point calibration.
-function gpsToWorld(area, lat, lon){
-  const c = area.calib;
-  if(!c) return null;
-  const m2 = metersXY(c.p2.lat, c.p2.lon, c.p1.lat, c.p1.lon);
-  const mp = metersXY(lat, lon, c.p1.lat, c.p1.lon);
-  const dw = {x:c.p2.wx-c.p1.wx, y:c.p2.wy-c.p1.wy};
-  const distW = Math.hypot(dw.x,dw.y), distM = Math.hypot(m2.x,m2.y);
-  if(distM < 1 || distW < 1) return null;
-  const scale = distW/distM;
-  const rot = Math.atan2(dw.y,dw.x) - Math.atan2(m2.y,m2.x);
-  const cos = Math.cos(rot), sin = Math.sin(rot);
-  const rx = mp.x*cos - mp.y*sin, ry = mp.x*sin + mp.y*cos;
-  return { x: c.p1.wx + rx*scale, y: c.p1.wy + ry*scale };
-}
-
-/* ---------------- Canvas / view state ---------------- */
-const canvas = document.getElementById('mapCanvas');
-const ctx = canvas.getContext('2d');
-const mapWrap = document.getElementById('mapWrap');
-let view = {scale:1, panX:0, panY:0};
-let imgEl = null; // Image object for current area's background
-
-function resizeCanvas(){
-  const rect = mapWrap.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = rect.width*dpr;
-  canvas.height = rect.height*dpr;
-  canvas.style.width = rect.width+"px";
-  canvas.style.height = rect.height+"px";
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  render();
-}
-window.addEventListener('resize', resizeCanvas);
-
-function loadAreaImage(area, cb){
-  if(!area.image){ imgEl=null; if(cb)cb(); return; }
-  const im = new Image();
-  im.onload = ()=>{ imgEl = im; if(cb)cb(); };
-  im.onerror = ()=>{ imgEl=null; if(cb)cb(); };
-  im.src = area.image;
-}
-
-function fitView(){
-  const rect = mapWrap.getBoundingClientRect();
-  const area = currentArea();
-  if(area && imgEl && area.imgW){
-    const s = Math.min(rect.width/area.imgW, rect.height/area.imgH)*0.94;
-    view.scale = s;
-    view.panX = (rect.width - area.imgW*s)/2;
-    view.panY = (rect.height - area.imgH*s)/2;
-  } else {
-    view.scale = 1;
-    view.panX = rect.width/2 - 400;
-    view.panY = rect.height/2 - 300;
-  }
-  render();
-}
-
-function worldToScreen(x,y){ return {x:x*view.scale+view.panX, y:y*view.scale+view.panY}; }
-function screenToWorld(x,y){ return {x:(x-view.panX)/view.scale, y:(y-view.panY)/view.scale}; }
-
-function render(){
-  const rect = mapWrap.getBoundingClientRect();
-  const cssVar = getComputedStyle(document.documentElement);
-  ctx.clearRect(0,0,rect.width,rect.height);
-  ctx.fillStyle = cssVar.getPropertyValue('--canvas-bg').trim() || '#eef1f5';
-  ctx.fillRect(0,0,rect.width,rect.height);
-
-  const area = currentArea();
-  if(!area){
-    ctx.fillStyle = cssVar.getPropertyValue('--text-sub').trim() || '#9aa3b2';
-    ctx.font = '14px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('「＋丁目」を押して地図を追加してください', rect.width/2, rect.height/2);
-    ctx.textAlign = 'left';
-    updateStatsLine();
-    return;
-  }
-
-  if(imgEl && area.imgW){
-    const tl = worldToScreen(0,0);
-    ctx.drawImage(imgEl, tl.x, tl.y, area.imgW*view.scale, area.imgH*view.scale);
-  } else {
-    // grid background as placeholder map
-    ctx.strokeStyle = cssVar.getPropertyValue('--grid').trim() || '#d8dce3';
-    ctx.lineWidth = 1;
-    const step = 100*view.scale;
-    if(step > 6){
-      const startX = ((-view.panX) % step + step) % step;
-      const startY = ((-view.panY) % step + step) % step;
-      for(let x=startX; x<rect.width; x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,rect.height); ctx.stroke(); }
-      for(let y=startY; y<rect.height; y+=step){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(rect.width,y); ctx.stroke(); }
-    }
-  }
-
-  // routes (walked path record, blue dashed) — saved strokes plus the in-progress GPS track
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  const liveOverlay = tracking && liveRoutePoints.length>1 ? [{points:liveRoutePoints}] : [];
-  (area.routes||[]).concat(liveOverlay).forEach(r=>{
-    if(!r.points || r.points.length<2) return;
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(37,99,235,0.85)';
-    ctx.lineWidth = Math.max(2, 4*view.scale);
-    ctx.setLineDash([Math.max(4,8*view.scale), Math.max(3,6*view.scale)]);
-    r.points.forEach((p,i)=>{
-      const s = worldToScreen(p.x,p.y);
-      if(i===0) ctx.moveTo(s.x,s.y); else ctx.lineTo(s.x,s.y);
-    });
-    ctx.stroke();
-    ctx.setLineDash([]);
-  });
-
-  // pins — kept small so they sit inside a house footprint instead of covering it
-  const r = Math.max(3.5, Math.min(8, 5*view.scale));
-  const textCol = cssVar.getPropertyValue('--text').trim() || '#1c1e21';
-  const panelCol = cssVar.getPropertyValue('--panel').trim() || '#ffffff';
-  const borderCol = cssVar.getPropertyValue('--panel-border').trim() || '#e2e4e8';
-  area.pins.forEach(p=>{
-    if(hiddenStatus.has(p.status)) return;
-    if(statusFilterMode==='keyOnly' && !KEY_FILTER_CODES.has(p.status)) return;
-    const s = worldToScreen(p.x,p.y);
-    if(s.x < -30 || s.y < -60 || s.x > rect.width+30 || s.y > rect.height+30) return;
-    const col = p.status && statusMap[p.status] ? statusMap[p.status].color : '#9e9e9e';
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, r, 0, Math.PI*2);
-    ctx.fillStyle = col;
-    ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = '#ffffff';
-    ctx.stroke();
-    if(p.memo){
-      ctx.beginPath();
-      ctx.arc(s.x + r*0.75, s.y - r*0.75, Math.max(2,r*0.32), 0, Math.PI*2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-    }
-    if(view.scale > 0.35){
-      const parts = [];
-      if(p.status) parts.push(p.status);
-      const nm = (p.name && p.name.trim()) || (p.memo && p.memo.trim()) || '';
-      if(nm) parts.push(nm);
-      const label = parts.join(' ');
-      if(label){
-        const maxChars = 16;
-        const t = label.length>maxChars ? label.slice(0,maxChars)+'…' : label;
-        const fontSize = 10;
-        ctx.font = fontSize+'px -apple-system, "Hiragino Kaku Gothic ProN", sans-serif';
-        const padX=5, padY=2;
-        const tw = ctx.measureText(t).width;
-        const bw = tw+padX*2, bh = fontSize+padY*2;
-        const bx = s.x - bw/2, by = s.y - r - bh - 4;
-        ctx.fillStyle = panelCol;
-        ctx.strokeStyle = borderCol;
-        ctx.lineWidth = 1;
-        roundRect(ctx, bx, by, bw, bh, 5);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = textCol;
-        ctx.textBaseline = 'middle';
-        ctx.fillText(t, bx+padX, by+bh/2+0.5);
-      }
-    }
-  });
-
-  // current GPS location dot (Google Maps style)
-  if(currentGpsWorld){
-    const s = worldToScreen(currentGpsWorld.x, currentGpsWorld.y);
-    const pulse = 22 + Math.sin(Date.now()/300)*4;
-    ctx.beginPath(); ctx.arc(s.x,s.y,pulse,0,Math.PI*2);
-    ctx.fillStyle = 'rgba(37,99,235,0.18)'; ctx.fill();
-    ctx.beginPath(); ctx.arc(s.x,s.y,8,0,Math.PI*2);
-    ctx.fillStyle = '#2563eb'; ctx.fill();
-    ctx.lineWidth=3; ctx.strokeStyle='#ffffff'; ctx.stroke();
-  }
-
-  updateStatsLine();
-}
-
-/* ---------------- Interaction ---------------- */
-const hiddenStatus = new Set();
-let statusFilterMode = 'all'; // 'all' | 'keyOnly'
-let calibrating = null; // null | {step:1|2, p1:{...}}
-let currentGpsWorld = null;
-let tracking = false;
-let liveRoutePoints = [];
-let watchId = null;
-let lastGpsFix = null; // {lat,lon}
-
-const pointers = new Map();
-let gesture = null; // {type:'pan'|'pinch', ...}
-let tapCandidate = null;
-
-canvas.addEventListener('pointerdown', (e)=>{
-  canvas.setPointerCapture(e.pointerId);
-  const rect = canvas.getBoundingClientRect();
-  const sx = e.clientX-rect.left, sy = e.clientY-rect.top;
-  pointers.set(e.pointerId, {x:sx,y:sy, startX:sx, startY:sy, t:Date.now()});
-
-  if(pointers.size===1){
-    const hit = calibrating ? null : hitTestPin(sx,sy);
-    tapCandidate = {sx,sy,t:Date.now(), hit};
-    gesture = {type:'maybePan'};
-  } else if(pointers.size===2){
-    tapCandidate=null;
-    const pts = [...pointers.values()];
-    gesture = {
-      type:'pinch',
-      startDist: dist(pts[0],pts[1]),
-      startScale: view.scale,
-      startMid: mid(pts[0],pts[1]),
-      startPan: {x:view.panX,y:view.panY}
-    };
-  }
-});
-
-canvas.addEventListener('pointermove', (e)=>{
-  if(!pointers.has(e.pointerId)) return;
-  const rect = canvas.getBoundingClientRect();
-  const sx = e.clientX-rect.left, sy = e.clientY-rect.top;
-  const p = pointers.get(e.pointerId);
-  p.x=sx; p.y=sy;
-
-  if(gesture && gesture.type==='pinch' && pointers.size===2){
-    const pts = [...pointers.values()];
-    const d = dist(pts[0],pts[1]);
-    const scaleFactor = d / (gesture.startDist||1);
-    let newScale = gesture.startScale*scaleFactor;
-    newScale = Math.min(8, Math.max(0.15, newScale));
-    const m = mid(pts[0],pts[1]);
-    const worldAtStart = { x:(gesture.startMid.x-gesture.startPan.x)/gesture.startScale, y:(gesture.startMid.y-gesture.startPan.y)/gesture.startScale };
-    view.scale = newScale;
-    view.panX = m.x - worldAtStart.x*newScale;
-    view.panY = m.y - worldAtStart.y*newScale;
-    render();
-    return;
-  }
-
-  if(gesture && gesture.type==='maybePan'){
-    const dx = sx-tapCandidate.sx, dy = sy-tapCandidate.sy;
-    if(Math.hypot(dx,dy) > 6){
-      gesture = {type:'pan', lastX:tapCandidate.sx, lastY:tapCandidate.sy};
-      tapCandidate = null;
-    } else {
-      return;
-    }
-  }
-  if(gesture && gesture.type==='pan'){
-    const dx = sx-gesture.lastX, dy = sy-gesture.lastY;
-    view.panX += dx; view.panY += dy;
-    gesture.lastX = sx; gesture.lastY = sy;
-    render();
-  }
-});
-
-function endPointer(e){
-  if(!pointers.has(e.pointerId)) return;
-  pointers.delete(e.pointerId);
-
-  if(pointers.size===0){
-    if(tapCandidate && gesture && gesture.type==='maybePan'){
-      const dt = Date.now()-tapCandidate.t;
-      if(dt < 500){
-        if(!currentArea()){ /* no map selected yet */ }
-        else if(calibrating){
-          handleCalibTap(tapCandidate.sx, tapCandidate.sy);
-        } else if(tapCandidate.hit){
-          openPinModal(tapCandidate.hit);
-        } else {
-          const w = screenToWorld(tapCandidate.sx, tapCandidate.sy);
-          const pin = {id:uid(), x:w.x, y:w.y, status:null, name:'', memo:'', updatedAt:Date.now()};
-          currentArea().pins.push(pin);
-          saveData();
-          openPinModal(pin, true);
-        }
-      }
-    }
-    gesture=null; tapCandidate=null;
-    render();
-  } else if(pointers.size===1){
-    gesture=null;
-  }
-}
-canvas.addEventListener('pointerup', endPointer);
-canvas.addEventListener('pointercancel', endPointer);
-
-canvas.addEventListener('wheel', (e)=>{
-  e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  const sx = e.clientX-rect.left, sy=e.clientY-rect.top;
-  const before = screenToWorld(sx,sy);
-  let newScale = view.scale * (e.deltaY<0?1.1:0.9);
-  newScale = Math.min(8, Math.max(0.15,newScale));
-  view.scale = newScale;
-  const after = worldToScreen(before.x, before.y);
-  view.panX += sx-after.x; view.panY += sy-after.y;
-  render();
-},{passive:false});
-
-function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
-function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
-
-function hitTestPin(sx,sy){
-  const area = currentArea();
-  if(!area) return null;
-  const r = Math.max(3.5, Math.min(8, 5*view.scale)) + 10;
-  for(let i=area.pins.length-1;i>=0;i--){
-    const p = area.pins[i];
-    if(hiddenStatus.has(p.status)) continue;
-    if(statusFilterMode==='keyOnly' && !KEY_FILTER_CODES.has(p.status)) continue;
-    const s = worldToScreen(p.x,p.y);
-    if(Math.hypot(s.x-sx, s.y-sy) <= r) return p;
-  }
-  return null;
-}
-
-/* ---------------- GPS calibration ---------------- */
-const calibBanner = document.getElementById('calibBanner');
-const btnCalib = document.getElementById('btnCalib');
-const btnGps = document.getElementById('btnGps');
-const btnLocate = document.getElementById('btnLocate');
 function setGpsStatus(msg){ statusOverlayMsgs.gps = msg||''; renderStatusOverlay(); }
-function describeGpsError(err){
-  if(!err) return '原因不明のエラー';
-  const codeNames = {1:'PERMISSION_DENIED', 2:'POSITION_UNAVAILABLE', 3:'TIMEOUT'};
-  const codeName = codeNames[err.code] || ('code:'+err.code);
-  return `${codeName} — ${err.message || '(メッセージなし)'}`;
+function updateStatsLine(){
+  const total = data.pins.length;
+  const withMemo = data.pins.filter(p=>p.memo && p.memo.trim()).length;
+  const contract = data.pins.filter(p=>p.status==='係').length;
+  statusOverlayMsgs.stats = `総${total}・メモ${withMemo}・契約${contract}`;
+  renderStatusOverlay();
 }
-
-function getGpsFix(){
-  return new Promise((resolve,reject)=>{
-    if(!('geolocation' in navigator)){ reject(new Error('この端末・ブラウザは位置情報に対応していません。')); return; }
-    navigator.geolocation.getCurrentPosition(
-      pos=>resolve(pos.coords),
-      err=>reject(err),
-      {enableHighAccuracy:true, timeout:15000, maximumAge:0}
-    );
-  });
-}
-
-btnCalib.addEventListener('click', ()=>{
-  if(!currentArea()){ uiAlert('先に「＋丁目」で地図を作成してください。'); return; }
-  if(calibrating){ cancelCalib(); return; }
-  calibrating = {step:1};
-  calibBanner.style.display='block';
-  calibBanner.innerHTML = '📐 STEP1/2：今いる場所を地図上でタップしてください<br><button class="cbtn" id="calibCancel">キャンセル</button>';
-  document.getElementById('calibCancel').addEventListener('click', cancelCalib);
-});
-function cancelCalib(){
-  calibrating = null;
-  calibBanner.style.display='none';
-}
-async function handleCalibTap(sx,sy){
-  const w = screenToWorld(sx,sy);
-  calibBanner.innerHTML = 'GPSを取得中…しばらくお待ちください';
-  try{
-    const coords = await getGpsFix();
-    if(calibrating.step===1){
-      calibrating.p1 = {lat:coords.latitude, lon:coords.longitude, wx:w.x, wy:w.y};
-      calibrating.step = 2;
-      calibBanner.innerHTML = '📐 STEP2/2：そこから離れた場所（できれば50m以上）に移動し、その地点を地図上でタップしてください<br><button class="cbtn" id="calibCancel">キャンセル</button>';
-      document.getElementById('calibCancel').addEventListener('click', cancelCalib);
-    } else {
-      const p2 = {lat:coords.latitude, lon:coords.longitude, wx:w.x, wy:w.y};
-      const d = haversine(calibrating.p1.lat, calibrating.p1.lon, p2.lat, p2.lon);
-      if(d < 8){
-        calibBanner.innerHTML = '2地点が近すぎます（'+Math.round(d)+'m）。もう少し離れた場所でSTEP2をやり直してください。<br><button class="cbtn" id="calibCancel">キャンセル</button>';
-        document.getElementById('calibCancel').addEventListener('click', cancelCalib);
-        return;
-      }
-      currentArea().calib = {p1:calibrating.p1, p2:p2};
-      saveData();
-      cancelCalib();
-      uiAlert('地図の位置合わせが完了しました。GPS追跡を開始できます。');
-    }
-  }catch(err){
-    calibBanner.innerHTML = 'GPSの取得に失敗しました：<br><b>'+escapeHtml(describeGpsError(err))+'</b><br><button class="cbtn" id="calibCancel">閉じる</button>';
-    document.getElementById('calibCancel').addEventListener('click', cancelCalib);
-  }
-}
-
-/* ---------------- GPS tracking (auto route recording) ---------------- */
-let animLoop = null;
-function startAnimLoop(){
-  if(animLoop) return;
-  const step = ()=>{ render(); animLoop = requestAnimationFrame(step); };
-  animLoop = requestAnimationFrame(step);
-}
-function stopAnimLoop(){ if(animLoop){ cancelAnimationFrame(animLoop); animLoop=null; } }
-
-const MAX_TRACKING_MS = 3*60*60*1000; // auto-stop safety net: 3 hours
-let trackingStartedAt = null;
-
 function formatElapsed(ms){
   const totalMin = Math.floor(ms/60000);
   const h = Math.floor(totalMin/60), m = totalMin%60;
   return h>0 ? `${h}時間${m}分` : `${m}分`;
 }
-
-function onGpsUpdate(pos){
-  const area = currentArea();
-  if(!area) return;
-  const w = gpsToWorld(area, pos.coords.latitude, pos.coords.longitude);
-  if(!w){
-    setGpsStatus('この地図はまだ位置合わせされていません。「📐 地図の位置合わせ」を行ってください。');
-    stopTracking();
-    return;
+function routeLengthKm(points){
+  let d=0;
+  for(let i=1;i<points.length;i++) d += haversine(points[i-1].lat,points[i-1].lng,points[i].lat,points[i].lng);
+  return d/1000;
+}
+function updateUserLocation(lat,lng,accuracy){
+  const latlng=[lat,lng];
+  if(!userMarker){
+    userMarker = L.circleMarker(latlng, {radius:8, color:'#fff', weight:3, fillColor:'#2563eb', fillOpacity:1}).addTo(map);
+    accuracyCircle = L.circle(latlng, {radius:accuracy||20, color:'#2563eb', weight:1, fillColor:'#2563eb', fillOpacity:0.12}).addTo(map);
+  } else {
+    userMarker.setLatLng(latlng);
+    accuracyCircle.setLatLng(latlng); accuracyCircle.setRadius(accuracy||20);
   }
-  currentGpsWorld = w;
-  if(tracking){
-    if(trackingStartedAt && (Date.now()-trackingStartedAt) > MAX_TRACKING_MS){
-      stopTracking();
-      uiAlert('GPS追跡を開始してから3時間経過したため、自動的に停止しました（電池消耗を防ぐためです）。作業を続ける場合はもう一度「🛰GPS開始」を押してください。');
+}
+function updateLiveLine(){
+  const latlngs = liveRoutePoints.map(p=>[p.lat,p.lng]);
+  if(!liveLine){ liveLine = L.polyline(latlngs, {color:'#2563eb', weight:4, opacity:0.95}).addTo(map); }
+  else liveLine.setLatLngs(latlngs);
+}
+function onGpsUpdate(pos){
+  const {latitude:lat, longitude:lng, accuracy, heading} = pos.coords;
+  updateUserLocation(lat,lng,accuracy);
+  if(!hasCenteredOnce){ map.setView([lat,lng], 17); hasCenteredOnce=true; }
+  if(headingUp && typeof map.setBearing==='function' && typeof heading==='number' && !isNaN(heading)){
+    try{ map.setBearing(heading); }catch(e){}
+  }
+  if(recording){
+    if(recordingStartedAt && (Date.now()-recordingStartedAt) > MAX_RECORD_MS){
+      endRoute();
+      uiAlert('ルート記録を開始してから3時間経ったため、自動的に終了しました（電池消耗を防ぐためです）。続ける場合はもう一度「▶ルート開始」を押してください。');
       return;
     }
-    const last = lastGpsFix;
-    const moved = last ? haversine(last.lat,last.lon,pos.coords.latitude,pos.coords.longitude) : Infinity;
+    const moved = lastFix ? haversine(lastFix.lat,lastFix.lng,lat,lng) : Infinity;
     if(moved >= 4){
-      liveRoutePoints.push(w);
-      lastGpsFix = {lat:pos.coords.latitude, lon:pos.coords.longitude};
-      let distM=0;
-      for(let i=1;i<liveRoutePoints.length;i++){ distM += Math.hypot(liveRoutePoints[i].x-liveRoutePoints[i-1].x, liveRoutePoints[i].y-liveRoutePoints[i-1].y); }
-      const c=area.calib; const m2=metersXY(c.p2.lat,c.p2.lon,c.p1.lat,c.p1.lon);
-      const dw=Math.hypot(c.p2.wx-c.p1.wx,c.p2.wy-c.p1.wy), dm=Math.hypot(m2.x,m2.y);
-      const pxPerM = dw/dm;
-      const elapsed = trackingStartedAt ? formatElapsed(Date.now()-trackingStartedAt) : '';
-      setGpsStatus(`記録中(${elapsed})… 約${(distM/pxPerM/1000).toFixed(2)}km`);
+      liveRoutePoints.push({lat,lng});
+      lastFix = {lat,lng};
+      updateLiveLine();
+      const elapsed = recordingStartedAt ? formatElapsed(Date.now()-recordingStartedAt) : '';
+      setGpsStatus(`ルート記録中(${elapsed})… 約${routeLengthKm(liveRoutePoints).toFixed(2)}km`);
     }
   } else {
     setGpsStatus('現在地を表示中');
   }
-  render();
 }
 function onGpsError(err){
-  setGpsStatus('位置情報エラー：'+describeGpsError(err));
-  if(tracking) stopTracking();
+  setGpsStatus('位置情報エラー：'+(err && err.message ? err.message : '取得できませんでした'));
 }
-function startTracking(){
-  const area = currentArea();
-  if(!area){ uiAlert('先に「＋丁目」で地図を作成してください。'); return; }
-  if(!area.calib){ uiAlert('先に「📐 地図の位置合わせ」で地図とGPSを対応付けてください。'); return; }
+function startLocationWatch(){
   if(!('geolocation' in navigator)){ uiAlert('この端末・ブラウザは位置情報に対応していません。'); return; }
-  tracking = true;
-  liveRoutePoints = [];
-  lastGpsFix = null;
-  trackingStartedAt = Date.now();
-  btnGps.textContent = '⏹ GPS追跡停止';
-  btnGps.classList.add('active');
-  document.getElementById('bigStopBtn').style.display = 'block';
-  startAnimLoop();
   watchId = navigator.geolocation.watchPosition(onGpsUpdate, onGpsError, {enableHighAccuracy:true, maximumAge:2000, timeout:20000});
 }
-function stopTracking(){
-  if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
-  tracking = false;
-  trackingStartedAt = null;
-  btnGps.textContent = '🛰 GPS追跡開始';
-  btnGps.classList.remove('active');
-  document.getElementById('bigStopBtn').style.display = 'none';
-  stopAnimLoop();
+
+const btnRouteToggle = document.getElementById('btnRouteToggle');
+function startRoute(){
+  recording = true;
+  recordingStartedAt = Date.now();
+  lastFix = null;
+  liveRoutePoints = [];
+  btnRouteToggle.textContent = '⏹ルート終了';
+  btnRouteToggle.classList.add('active');
+}
+function endRoute(){
+  recording = false;
   if(liveRoutePoints.length>1){
-    if(!currentArea().routes) currentArea().routes = [];
-    currentArea().routes.push({id:uid(), points:liveRoutePoints, createdAt:Date.now()});
+    data.routes.push({id:uid(), points:liveRoutePoints, createdAt:Date.now()});
     saveData();
+    renderRoutes();
   }
   liveRoutePoints = [];
-  setGpsStatus(currentGpsWorld ? '現在地を表示中' : '');
-  render();
+  if(liveLine){ map.removeLayer(liveLine); liveLine=null; }
+  btnRouteToggle.textContent = '▶ルート開始';
+  btnRouteToggle.classList.remove('active');
+  setGpsStatus('現在地を表示中');
 }
-document.getElementById('bigStopBtn').addEventListener('click', stopTracking);
-btnGps.addEventListener('click', ()=>{ tracking ? stopTracking() : startTracking(); });
-btnLocate.addEventListener('click', async ()=>{
-  const area = currentArea();
-  if(!area){ uiAlert('先に「＋丁目」で地図を作成してください。'); return; }
-  if(!currentGpsWorld){
-    if(!area.calib){ uiAlert('先に「📐 地図の位置合わせ」を行ってください。'); return; }
-    try{
-      const coords = await getGpsFix();
-      const w = gpsToWorld(area, coords.latitude, coords.longitude);
-      if(!w){ uiAlert('現在地を地図上に変換できませんでした。'); return; }
-      currentGpsWorld = w;
-      if(!tracking) startAnimLoop();
-      setTimeout(()=>{ if(!tracking) stopAnimLoop(); }, 1200);
-    }catch(e){ uiAlert('GPSの取得に失敗しました： '+describeGpsError(e)); return; }
-  }
-  const rect = mapWrap.getBoundingClientRect();
-  view.panX = rect.width/2 - currentGpsWorld.x*view.scale;
-  view.panY = rect.height/2 - currentGpsWorld.y*view.scale;
-  render();
+btnRouteToggle.addEventListener('click', ()=>{ recording ? endRoute() : startRoute(); });
+
+const btnHeading = document.getElementById('btnHeading');
+btnHeading.classList.toggle('active', headingUp);
+btnHeading.addEventListener('click', ()=>{
+  headingUp = !headingUp;
+  btnHeading.classList.toggle('active', headingUp);
+  if(!headingUp && typeof map.setBearing==='function'){ try{ map.setBearing(0); }catch(e){} }
 });
 
-/* ---------------- Zoom buttons ---------------- */
-document.getElementById('zoomIn').addEventListener('click', ()=>{ view.scale=Math.min(8,view.scale*1.25); render(); });
-document.getElementById('zoomOut').addEventListener('click', ()=>{ view.scale=Math.max(0.15,view.scale*0.8); render(); });
-document.getElementById('zoomFit').addEventListener('click', fitView);
-
-/* ---------------- Legend (removed from UI; kept as a no-op so existing calls stay harmless) ---------------- */
-function renderLegend(){}
-
-function updateStatsLine(){
-  const area = currentArea();
-  if(!area){ statusOverlayMsgs.stats=''; renderStatusOverlay(); return; }
-  const total = area.pins.length;
-  const withMemo = area.pins.filter(p=>p.memo && p.memo.trim()).length;
-  const contract = area.pins.filter(p=>p.status==='係').length;
-  statusOverlayMsgs.stats = `${area.district} ${area.chome}｜総${total}・メモ${withMemo}・契約${contract}`;
-  renderStatusOverlay();
-}
+document.getElementById('btnLocate').addEventListener('click', ()=>{
+  if(userMarker){ map.setView(userMarker.getLatLng(), 17); }
+  else { uiAlert('現在地をまだ取得できていません。位置情報の許可を確認してください。'); }
+});
 
 /* ---------------- Pin modal ---------------- */
 const pinModal = document.getElementById('pinModal');
@@ -973,30 +454,32 @@ function buildStatusGrid(selKey){
     chip.addEventListener('click', ()=>{
       const wasSelected = chip.classList.contains('sel');
       if(wasSelected){
-        // tap again to undo a mistaken selection — clears it, keeps the modal open
         chip.classList.remove('sel');
         editingPin.status = null;
         editingPin.updatedAt = Date.now();
-        saveData();
-        renderLegend(); render();
+        if(editingPin.id){ saveData(); renderPins(); }
       } else {
-        // picking a status is the common quick action — save and close right away
         grid.querySelectorAll('.statusChip').forEach(c=>c.classList.remove('sel'));
         chip.classList.add('sel');
         editingPin.name = document.getElementById('pinName').value.trim();
         editingPin.memo = document.getElementById('pinMemo').value.trim();
         editingPin.status = s.key;
         editingPin.updatedAt = Date.now();
-        saveData();
+        commitPin(editingPin);
         isNewPin = false;
         pinModal.classList.add('hidden'); editingPin=null;
-        renderLegend(); render(); renderList();
+        renderPins(); renderList();
       }
     });
     grid.appendChild(chip);
   });
 }
-
+// Actually add a pending (id:null) pin into the data store — called only at the
+// moment the person picks a status or presses Save with real content in it.
+function commitPin(pin){
+  if(!pin.id){ pin.id = uid(); data.pins.push(pin); }
+  saveData();
+}
 function openPinModal(pin, fresh){
   editingPin = pin; isNewPin = !!fresh;
   document.getElementById('pinModalTitle').textContent = fresh? '新しいピン' : '建物メモを編集';
@@ -1004,266 +487,59 @@ function openPinModal(pin, fresh){
   document.getElementById('pinMemo').value = pin.memo||'';
   buildStatusGrid(pin.status||null);
   document.getElementById('pinMetaLine').textContent = pin.updatedAt ? ('最終更新: '+new Date(pin.updatedAt).toLocaleString('ja-JP')) : '';
+  document.getElementById('pinDelete').style.display = pin.id ? 'block' : 'none';
   pinModal.classList.remove('hidden');
 }
-function closePinModal(discardIfNewEmpty){
-  if(discardIfNewEmpty && isNewPin && editingPin){
-    const area = currentArea();
-    const idx = area.pins.findIndex(p=>p.id===editingPin.id);
-    const nameEmpty = !document.getElementById('pinName').value.trim();
-    const memoEmpty = !document.getElementById('pinMemo').value.trim();
-    const statusEmpty = !editingPin.status;
-    if(idx>-1 && nameEmpty && memoEmpty && statusEmpty){ area.pins.splice(idx,1); saveData(); }
-  }
-  pinModal.classList.add('hidden'); editingPin=null; isNewPin=false; render();
+function closePinModal(){
+  // Nothing to clean up: a pending (id:null) pin was never written to data.pins
+  // in the first place, so simply closing the modal discards it.
+  pinModal.classList.add('hidden'); editingPin=null; isNewPin=false;
 }
-document.getElementById('pinCancel').addEventListener('click', ()=>closePinModal(true));
+document.getElementById('pinCancel').addEventListener('click', closePinModal);
 document.getElementById('pinSave').addEventListener('click', ()=>{
   const sel = document.querySelector('#statusGrid .statusChip.sel');
-  editingPin.name = document.getElementById('pinName').value.trim();
-  editingPin.memo = document.getElementById('pinMemo').value.trim();
-  editingPin.status = sel? sel.dataset.key : editingPin.status;
-  editingPin.updatedAt = Date.now();
-  saveData();
-  isNewPin=false;
-  pinModal.classList.add('hidden'); editingPin=null; renderLegend(); render(); renderList();
-});
-document.getElementById('pinDelete').addEventListener('click', async ()=>{
-  if(!(await uiConfirm('このピンを削除します（メモ・ステータスもろとも消えます。元に戻せません）。よろしいですか？', true))) return;
-  const area = currentArea();
-  const idx = area.pins.findIndex(p=>p.id===editingPin.id);
-  if(idx>-1) area.pins.splice(idx,1);
-  saveData();
-  pinModal.classList.add('hidden'); editingPin=null; isNewPin=false; renderLegend(); render(); renderList();
-});
-
-/* ---------------- Hint banner ---------------- */
-const hintEl = document.getElementById('hint');
-function refreshHint(){
-  const area = currentArea();
-  document.getElementById('hintText').textContent = !area
-    ? '上の「＋地域」「＋丁目」から回るエリアを追加してください。'
-    : (area.image
-      ? 'タップで新規ピン追加、ピンをタップで編集。2本指でピンチ／ドラッグして移動できます。GPSを使うにはまず「📐 地図の位置合わせ」を行ってください。'
-      : '背景地図が未設定です。「⋯設定」から画像（Googleマップのスクリーンショットなど）を設定してください。タップでピンを追加できます。');
-  hintEl.style.display = data.hintDismissed ? 'none' : 'flex';
-}
-document.getElementById('hintClose').addEventListener('click', ()=>{ data.hintDismissed=true; saveData(); hintEl.style.display='none'; });
-
-/* ---------------- Area select / menu ---------------- */
-/* ---------------- District / Chome tabs ---------------- */
-function areasOfDistrict(district){
-  return Object.entries(data.areas).filter(([,a])=>a.district===district).map(([id,a])=>({id,...a}));
-}
-function renderDistrictTabs(){
-  const el = document.getElementById('districtTabs');
-  el.innerHTML='';
-  data.districts.forEach(d=>{
-    const chip = document.createElement('div');
-    chip.className = 'tabChip'+(d===data.currentDistrict?' active':'');
-    chip.textContent = d;
-    chip.addEventListener('click', ()=>selectDistrict(d));
-    el.appendChild(chip);
-  });
-}
-function renderChomeTabs(){
-  const el = document.getElementById('chomeTabs');
-  el.innerHTML='';
-  const list = areasOfDistrict(data.currentDistrict);
-  list.forEach(a=>{
-    const chip = document.createElement('div');
-    chip.className = 'tabChip'+(a.id===data.currentAreaId?' active':'');
-    chip.textContent = a.chome;
-    chip.addEventListener('click', ()=>selectChome(a.id));
-    el.appendChild(chip);
-  });
-  if(list.length===0){
-    const hint = document.createElement('div');
-    hint.className='tabChip';
-    hint.style.opacity='0.6';
-    hint.textContent = '「＋丁目」で追加してください';
-    el.appendChild(hint);
-  }
-}
-function selectDistrict(d){
-  data.currentDistrict = d;
-  const list = areasOfDistrict(d);
-  data.currentAreaId = list.length ? list[0].id : null;
-  saveData();
-  renderDistrictTabs(); renderChomeTabs();
-  switchToCurrentArea();
-}
-function selectChome(id){
-  data.currentAreaId = id;
-  saveData();
-  renderChomeTabs();
-  switchToCurrentArea();
-}
-document.getElementById('btnAddDistrict').addEventListener('click', async ()=>{
-  const name = await uiPrompt('地域名を入力してください', '例：南篠崎町');
-  if(!name || !name.trim()) return;
-  const trimmed = name.trim();
-  if(!data.districts.includes(trimmed)) data.districts.push(trimmed);
-  saveData();
-  selectDistrict(trimmed);
-});
-document.getElementById('btnAddChome').addEventListener('click', async ()=>{
-  if(!data.currentDistrict){ uiAlert('先に地域を選択・追加してください。'); return; }
-  const name = await uiPrompt('丁目名を入力してください', '例：1丁目', String(areasOfDistrict(data.currentDistrict).length+1)+'丁目');
-  if(!name || !name.trim()) return;
-  const id = uid();
-  data.areas[id] = {district:data.currentDistrict, chome:name.trim(), image:null, imgW:0, imgH:0, pins:[], routes:[], calib:null};
-  data.currentAreaId = id;
-  saveData();
-  renderChomeTabs();
-  switchToCurrentArea();
-});
-
-function switchToCurrentArea(){
-  if(tracking) stopTracking();
-  if(calibrating) cancelCalib();
-  currentGpsWorld = null;
-  setGpsStatus('');
-  const area = currentArea();
-  if(!area){
-    imgEl = null;
-    fitView();
-    renderLegend();
-    refreshHint();
-    renderList();
+  const name = document.getElementById('pinName').value.trim();
+  const memo = document.getElementById('pinMemo').value.trim();
+  const status = sel ? sel.dataset.key : editingPin.status;
+  if(!editingPin.id && !name && !memo && !status){
+    // nothing entered at all — just close, don't create an empty pin
+    pinModal.classList.add('hidden'); editingPin=null; isNewPin=false;
     return;
   }
-  loadAreaImage(area, ()=>{
-    if(imgEl){ area.imgW = imgEl.naturalWidth; area.imgH = imgEl.naturalHeight; }
-    fitView();
-    renderLegend();
-    refreshHint();
-    renderList();
-  });
-}
-
-const areaModal = document.getElementById('areaModal');
-document.getElementById('btnAreaMenu').addEventListener('click', ()=>{
-  const area = currentArea();
-  if(!area){ uiAlert('先に「＋丁目」で地図を作成してください。'); return; }
-  document.getElementById('areaModalTitle').textContent = area.district+' '+area.chome+' の設定';
-  document.getElementById('areaNameInput').value = area.chome;
-  document.getElementById('areaImageInput').value='';
-  document.getElementById('areaImageFileName').textContent = area.image ? '設定済みの画像があります（再選択すると置き換えます）' : '未選択';
-  areaModal.classList.remove('hidden');
+  editingPin.name = name;
+  editingPin.memo = memo;
+  editingPin.status = status;
+  editingPin.updatedAt = Date.now();
+  commitPin(editingPin);
+  isNewPin=false;
+  pinModal.classList.add('hidden'); editingPin=null;
+  renderPins(); renderList();
 });
-document.getElementById('areaImageBtn').addEventListener('click', ()=>{
-  document.getElementById('areaImageInput').click();
-});
-document.getElementById('areaImageInput').addEventListener('change', (e)=>{
-  const f = e.target.files[0];
-  document.getElementById('areaImageFileName').textContent = f ? ('選択中: '+f.name) : '未選択';
-});
-document.getElementById('areaCancel').addEventListener('click', ()=> areaModal.classList.add('hidden'));
-document.getElementById('areaSave').addEventListener('click', ()=>{
-  const area = currentArea();
-  const newName = document.getElementById('areaNameInput').value.trim();
-  if(newName) area.chome = newName;
-  const file = document.getElementById('areaImageInput').files[0];
-  if(file){
-    resizeImageFile(file, 1600, 0.82, (dataUrl, w, h, blob)=>{
-      area.image = dataUrl; area.imgW=w; area.imgH=h;
-      saveData();
-      areaModal.classList.add('hidden');
-      renderChomeTabs();
-      switchToCurrentArea();
-      if(cloud.ready && cloud.assets){
-        cloud.assets.upload(blob, {type:'image/jpeg'}).then(res=>{
-          area.imageAssetId = res.id;
-          area.image = res.url;
-          saveData();
-          if(currentArea()===area) render();
-        }).catch(err=>console.error('asset upload failed', err));
-      }
-    });
-  } else {
-    saveData();
-    areaModal.classList.add('hidden');
-    renderChomeTabs();
-    updateStatsLine();
-  }
-});
-document.getElementById('areaDelete').addEventListener('click', async ()=>{
-  if(!(await uiConfirm('この丁目と、含まれる全てのピン・ルートを削除します。よろしいですか？', true))) return;
-  delete data.areas[data.currentAreaId];
-  const remain = areasOfDistrict(data.currentDistrict);
-  data.currentAreaId = remain.length ? remain[0].id : null;
+document.getElementById('pinDelete').addEventListener('click', async ()=>{
+  if(!editingPin.id){ pinModal.classList.add('hidden'); editingPin=null; isNewPin=false; return; }
+  if(!(await uiConfirm('このピンを削除します（メモ・ステータスもろとも消えます。元に戻せません）。よろしいですか？', true))) return;
+  const idx = data.pins.findIndex(p=>p.id===editingPin.id);
+  if(idx>-1) data.pins.splice(idx,1);
   saveData();
-  areaModal.classList.add('hidden');
-  renderChomeTabs();
-  switchToCurrentArea();
-});
-document.getElementById('districtDelete').addEventListener('click', async ()=>{
-  if(!(await uiConfirm('「'+data.currentDistrict+'」の地域と、その中の全ての丁目・ピン・ルートを削除します。よろしいですか？', true))) return;
-  const d = data.currentDistrict;
-  Object.keys(data.areas).forEach(id=>{ if(data.areas[id].district===d) delete data.areas[id]; });
-  data.districts = data.districts.filter(x=>x!==d);
-  if(data.districts.length===0) data.districts = SEED_DISTRICTS.slice();
-  data.currentDistrict = data.districts[0];
-  const remain = areasOfDistrict(data.currentDistrict);
-  data.currentAreaId = remain.length ? remain[0].id : null;
-  saveData();
-  areaModal.classList.add('hidden');
-  renderDistrictTabs(); renderChomeTabs();
-  switchToCurrentArea();
+  pinModal.classList.add('hidden'); editingPin=null; isNewPin=false;
+  renderPins(); renderList();
 });
 
-document.getElementById('clearCalib').addEventListener('click', async ()=>{
-  if(!(await uiConfirm('この地図の位置合わせ情報を削除します。GPS追跡は再度位置合わせするまで使えなくなります。よろしいですか？', true))) return;
-  currentArea().calib = null;
-  saveData();
-  uiAlert('位置合わせを解除しました。');
-});
-document.getElementById('clearRoutes').addEventListener('click', async ()=>{
-  if(!(await uiConfirm('このエリアの記録ルートを全て消去します。よろしいですか？', true))) return;
-  currentArea().routes = [];
-  saveData();
-  render();
-});
-
-function resizeImageFile(file, maxDim, quality, cb){
-  const reader = new FileReader();
-  reader.onload = (e)=>{
-    const img = new Image();
-    img.onload = ()=>{
-      let w=img.naturalWidth, h=img.naturalHeight;
-      if(w>maxDim || h>maxDim){
-        const s = maxDim/Math.max(w,h);
-        w = Math.round(w*s); h = Math.round(h*s);
-      }
-      const c = document.createElement('canvas');
-      c.width=w; c.height=h;
-      c.getContext('2d').drawImage(img,0,0,w,h);
-      const dataUrl = c.toDataURL('image/jpeg', quality);
-      c.toBlob(blob=>{ cb(dataUrl, w, h, blob); }, 'image/jpeg', quality);
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-/* ---------------- List drawer ---------------- */
-const listDrawer = document.getElementById('listDrawer');
-document.getElementById('btnList').addEventListener('click', ()=>{ renderList(); listDrawer.classList.add('open'); });
+/* ---------------- Filter / list ---------------- */
 const btnFilterKey = document.getElementById('btnFilterKey');
 btnFilterKey.title = '契約・再訪・不在のみ表示';
 btnFilterKey.addEventListener('click', (e)=>{
   statusFilterMode = statusFilterMode==='all' ? 'keyOnly' : 'all';
   e.currentTarget.classList.toggle('active', statusFilterMode==='keyOnly');
-  render();
+  renderPins();
 });
+const listDrawer = document.getElementById('listDrawer');
+document.getElementById('btnList').addEventListener('click', ()=>{ renderList(); listDrawer.classList.add('open'); });
 document.getElementById('listClose').addEventListener('click', ()=> listDrawer.classList.remove('open'));
 function renderList(){
   const wrap = document.getElementById('pinListItems');
-  const area = currentArea();
   wrap.innerHTML='';
-  if(!area) return;
-  const pins = area.pins.filter(p=>p.memo && p.memo.trim()).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const pins = data.pins.filter(p=>p.memo && p.memo.trim()).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   if(pins.length===0){ wrap.innerHTML = '<div style="padding:16px;color:var(--text-sub);font-size:13px;">メモが入力されたピンはまだありません。</div>'; return; }
   pins.forEach(p=>{
     const div = document.createElement('div');
@@ -1277,41 +553,31 @@ function renderList(){
       </div>`;
     div.addEventListener('click', ()=>{
       listDrawer.classList.remove('open');
-      const rect = mapWrap.getBoundingClientRect();
-      view.panX = rect.width/2 - p.x*view.scale;
-      view.panY = rect.height/2 - p.y*view.scale;
-      render();
+      map.setView([p.lat,p.lng], 18);
       setTimeout(()=>openPinModal(p,false), 150);
     });
     wrap.appendChild(div);
   });
 }
-function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-/* ---------------- Import / Export ---------------- */
-const ioModal = document.getElementById('ioModal');
-document.getElementById('btnAreaMenu').addEventListener('dblclick', ()=> ioModal.classList.remove('hidden'));
-document.getElementById('ioClose').addEventListener('click', ()=> ioModal.classList.add('hidden'));
-document.getElementById('doExport').addEventListener('click', async ()=>{
+/* ---------------- Backup ---------------- */
+const settingsModal = document.getElementById('settingsModal');
+document.getElementById('btnBackup').addEventListener('click', ()=> settingsModal.classList.remove('hidden'));
+document.getElementById('settingsClose').addEventListener('click', ()=> settingsModal.classList.add('hidden'));
+document.getElementById('btnRouteDelete').addEventListener('click', async ()=>{
+  if(!(await uiConfirm('記録ルートを全て消去します。よろしいですか？', true))) return;
+  data.routes = []; saveData(); renderRoutes();
+});
+document.getElementById('doExport').addEventListener('click', ()=>{
   const jsonStr = JSON.stringify(data,null,2);
-  if(cloud.downloads){
-    try{
-      await cloud.downloads.save({filename:'visit-sales-map-backup.json', data:jsonStr});
-    }catch(e){
-      if(e && e.code!=='declined') uiAlert('保存できませんでした。');
-    }
-  } else {
-    const blob = new Blob([jsonStr], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href=url; a.download = 'visit-sales-map-backup.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-  }
+  const blob = new Blob([jsonStr], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download = 'visit-sales-map-backup.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 });
-document.getElementById('importFileBtn').addEventListener('click', ()=>{
-  document.getElementById('importFile').click();
-});
+document.getElementById('importFileBtn').addEventListener('click', ()=>{ document.getElementById('importFile').click(); });
 document.getElementById('importFile').addEventListener('change', (e)=>{
   const file = e.target.files[0];
   document.getElementById('importFileName').textContent = file ? ('選択中: '+file.name) : '未選択';
@@ -1320,34 +586,29 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
   reader.onload = async (ev)=>{
     try{
       const parsed = JSON.parse(ev.target.result);
-      if(!parsed.areas) throw new Error('invalid');
+      if(!Array.isArray(parsed.pins)) throw new Error('invalid');
       if(!(await uiConfirm('現在のデータを置き換えます。よろしいですか？', true))) return;
       data = parsed;
-      if(!Array.isArray(data.districts) || data.districts.length===0){ data.districts = SEED_DISTRICTS.slice(); }
-      Object.values(data.areas).forEach(a=>{
-        if(!a.routes) a.routes=[]; if(!a.pins) a.pins=[]; if(a.calib===undefined) a.calib=null;
-        if(!a.district){ a.district='その他'; if(!data.districts.includes('その他')) data.districts.push('その他'); }
-        if(!a.chome){ a.chome = a.name || '1件目'; }
-      });
-      if(!data.currentDistrict || !data.districts.includes(data.currentDistrict)){
-        const fa = data.areas[data.currentAreaId];
-        data.currentDistrict = fa ? fa.district : data.districts[0];
-      }
+      if(!Array.isArray(data.routes)) data.routes = [];
       saveData();
-      renderDistrictTabs(); renderChomeTabs();
-      switchToCurrentArea();
-      ioModal.classList.add('hidden');
+      renderPins(); renderRoutes();
+      settingsModal.classList.add('hidden');
     }catch(err){ uiAlert('読み込みに失敗しました。ファイル形式を確認してください。'); }
   };
   reader.readAsText(file);
 });
 
+/* ---------------- Hint ---------------- */
+const hintEl = document.getElementById('hint');
+document.getElementById('hintText').textContent = '地図をタップして新規ピン追加(ステータスを選ぶかメモを保存するまで何も記録されません)。「▶ルート開始」で歩いたルートの記録を開始できます。';
+hintEl.style.display = data.hintDismissed ? 'none' : 'flex';
+document.getElementById('hintClose').addEventListener('click', ()=>{ data.hintDismissed=true; saveData(); hintEl.style.display='none'; });
+
 /* ---------------- Init ---------------- */
-renderDistrictTabs();
-renderChomeTabs();
-resizeCanvas();
-switchToCurrentArea();
-initCloud();
+renderPins();
+renderRoutes();
+updateStatsLine();
+startLocationWatch();
 
 })();
 </script>
